@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1195" viewBox="0 0 1860 1195" role="img" aria-label="Вариант A — failover с Push на SMS">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#456b98"/></marker>
+  <marker id="arrowAccent" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#bd7b25"/></marker>
+  <style>
+    text { font-family: 'DejaVu Sans', Arial, sans-serif; }
+    .title { font-size: 27px; font-weight: 700; fill: #172b4d; }
+    .subtitle { font-size: 14px; fill: #53657d; }
+    .actor { fill: #eaf1fb; stroke: #7e9dc4; stroke-width: 1.4; }
+    .actor-text { font-size: 12px; font-weight: 600; fill: #1f3b60; text-anchor: middle; }
+    .life { stroke: #b1bdcb; stroke-width: 1.2; stroke-dasharray: 5 6; }
+    .msg { stroke: #456b98; stroke-width: 1.7; fill: none; marker-end: url(#arrow); }
+    .msg-accent { stroke: #bd7b25; stroke-width: 1.9; fill: none; marker-end: url(#arrowAccent); }
+    .msg-dash { stroke-dasharray: 7 5; }
+    .msg-text { font-size: 12px; fill: #24364b; text-anchor: middle; }
+    .note { fill: #fff7e8; stroke: #e2bc78; stroke-width: 1.2; }
+    .note-text { font-size: 12px; fill: #62491f; }
+    .footer { font-size: 11px; fill: #6b7788; }
+  </style>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#f7f9fc"/>
+<text class="title" x="48" y="46">Вариант A — failover с Push на SMS</text>
+<text class="subtitle" x="48" y="73">Если App ACK не поступил за 8 секунд, Temporal запускает SMS Activity; поздний ACK фиксируется отдельно.</text>
+
+<rect class="actor" x="22" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="90" y="110">Bank Core</text>
+<line class="life" x1="90" y1="154" x2="90" y2="1157"/>
+<rect class="actor" x="180" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="248" y="110">Notification API</text>
+<line class="life" x1="248" y1="154" x2="248" y2="1157"/>
+<rect class="actor" x="338" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="406" y="110">PostgreSQL</text>
+<line class="life" x1="406" y1="154" x2="406" y2="1157"/>
+<rect class="actor" x="496" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="564" y="110">Kafka</text>
+<line class="life" x1="564" y1="154" x2="564" y2="1157"/>
+<rect class="actor" x="654" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="722" y="110">Temporal Workflow</text>
+<line class="life" x1="722" y1="154" x2="722" y2="1157"/>
+<rect class="actor" x="812" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="880" y="110">Push Activity</text>
+<line class="life" x1="880" y1="154" x2="880" y2="1157"/>
+<rect class="actor" x="970" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1038" y="110">FCM / APNs</text>
+<line class="life" x1="1038" y1="154" x2="1038" y2="1157"/>
+<rect class="actor" x="1128" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1196" y="110">Mobile App</text>
+<line class="life" x1="1196" y1="154" x2="1196" y2="1157"/>
+<rect class="actor" x="1286" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1354" y="110">Callback API</text>
+<line class="life" x1="1354" y1="154" x2="1354" y2="1157"/>
+<rect class="actor" x="1444" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1512" y="110">SMS Activity</text>
+<line class="life" x1="1512" y1="154" x2="1512" y2="1157"/>
+<rect class="actor" x="1602" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1670" y="110">SMS Provider</text>
+<line class="life" x1="1670" y1="154" x2="1670" y2="1157"/>
+<line class="msg" x1="90" y1="229.0" x2="248" y2="229.0"/>
+<text class="msg-text" x="169.0" y="212" text-anchor="middle">POST critical event</text>
+<line class="msg" x1="248" y1="290.0" x2="406" y2="290.0"/>
+<text class="msg-text" x="327.0" y="268" text-anchor="middle">Сохранить notification + inbox +</text>
+<text class="msg-text" x="327.0" y="284" text-anchor="middle">outbox</text>
+<line class="msg" x1="248" y1="351.0" x2="90" y2="351.0"/>
+<text class="msg-text" x="169.0" y="334" text-anchor="middle">202 Accepted + notification_id</text>
+<line class="msg msg-dash" x1="564" y1="407.0" x2="722" y2="407.0"/>
+<text class="msg-text" x="643.0" y="390" text-anchor="middle">Start Workflow(notification_id)</text>
+<line class="msg" x1="722" y1="463.0" x2="880" y2="463.0"/>
+<text class="msg-text" x="801.0" y="446" text-anchor="middle">Send Push</text>
+<line class="msg" x1="880" y1="519.0" x2="1038" y2="519.0"/>
+<text class="msg-text" x="959.0" y="502" text-anchor="middle">Submit push</text>
+<line class="msg msg-dash" x1="1038" y1="575.0" x2="880" y2="575.0"/>
+<text class="msg-text" x="959.0" y="558" text-anchor="middle">Accepted (это не App ACK)</text>
+<line class="msg" x1="880" y1="631.0" x2="406" y2="631.0"/>
+<text class="msg-text" x="643.0" y="614" text-anchor="middle">Сохранить provider acceptance</text>
+<path class="msg" d="M 722 687.0 h 34 v 22 h -27"/>
+<text class="msg-text" x="830" y="671" text-anchor="start">Ждать App ACK или durable timer 8s</text>
+<rect class="note" x="660" y="718.5" width="756" height="57" rx="8"/>
+<text class="note-text" x="674" y="740.5">8 секунд прошло, App ACK не поступил. Workflow резервирует SMS. Если ACK придёт позже</text>
+<text class="note-text" x="674" y="758.5">отправки SMS, отменить её уже может быть невозможно.</text>
+<line class="msg-accent" x1="722" y1="819.0" x2="1512" y2="819.0"/>
+<text class="msg-text" x="1117.0" y="802" text-anchor="middle">Создать SMS attempt</text>
+<line class="msg-accent" x1="1512" y1="875.0" x2="1670" y2="875.0"/>
+<text class="msg-text" x="1591.0" y="858" text-anchor="middle">Submit SMS(attempt_id)</text>
+<line class="msg msg-dash" x1="1670" y1="931.0" x2="1512" y2="931.0"/>
+<text class="msg-text" x="1591.0" y="914" text-anchor="middle">Accepted + provider_message_id</text>
+<line class="msg" x1="1512" y1="987.0" x2="406" y2="987.0"/>
+<text class="msg-text" x="959.0" y="970" text-anchor="middle">Сохранить результат попытки</text>
+<line class="msg msg-dash" x1="1670" y1="1043.0" x2="1354" y2="1043.0"/>
+<text class="msg-text" x="1512.0" y="1026" text-anchor="middle">DLR callback, если поддерживается</text>
+<line class="msg msg-dash" x1="1354" y1="1099.0" x2="722" y2="1099.0"/>
+<text class="msg-text" x="1038.0" y="1082" text-anchor="middle">Signal delivery status</text>
+<text class="footer" x="48" y="1182">Пунктирная линия — асинхронное сообщение или callback. Подтверждение провайдера не равно подтверждению на устройстве.</text>
+</svg>

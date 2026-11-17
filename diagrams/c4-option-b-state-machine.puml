@@ -1,0 +1,56 @@
+@startuml C4_Container_Option_B_StateMachine
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_WITH_LEGEND()
+title C4 Container — Вариант B: Kafka + собственная State Machine
+
+System_Ext(core, "Bank Core / Domain Services", "События бизнес-доменов")
+System_Ext(fcm, "FCM / APNs", "Push provider")
+System_Ext(sms, "SMS Providers", "Основной и резервный шлюзы")
+System_Ext(email, "Email Provider", "Почтовый шлюз")
+Person(user, "Пользователь", "Получает уведомления")
+
+System_Boundary(np, "Notification Platform") {
+  Container(api, "Notification API", "Go", "Приём, idempotency, сохранение")
+  ContainerDb(db, "Notification DB", "PostgreSQL HA", "State, attempts, outbox, inbox, next_action_at")
+  Container(relay, "Outbox Relay", "Go", "Публикация outbox events")
+  ContainerQueue(kafka, "Kafka", "Event Bus", "P0/P1/P2 topics, channel tasks, callback events")
+  Container(router, "Router", "Go", "Выбор канала и переходы состояния")
+  Container(scheduler, "Durable Scheduler", "Go", "SKIP LOCKED, lease, next_action_at")
+  Container(pushw, "Push Worker", "Go", "Push send / provider result")
+  Container(smsw, "SMS Worker", "Go", "SMS send / provider result")
+  Container(emailw, "Email Worker", "Go", "Email send")
+  Container(callback, "Callback API", "Go", "App ACK / DLR validation")
+  ContainerDb(redis, "Redis", "Cache", "Settings cache and rate limits only")
+  Container(prefs, "Preference Service", "Go", "Channel order and verified destinations")
+}
+
+Rel(core, api, "Создаёт уведомление", "HTTPS/gRPC")
+Rel(api, db, "Notification + Inbox + Outbox transaction")
+Rel(relay, db, "Poll outbox")
+Rel(relay, kafka, "Publish")
+Rel(kafka, router, "P0/P1/P2 events")
+Rel(router, db, "Read/update FSM with optimistic lock")
+Rel(router, prefs, "Resolve user route")
+Rel(prefs, redis, "Cache-aside")
+Rel(scheduler, db, "Find due actions; SKIP LOCKED")
+Rel(scheduler, db, "Stores failover task + outbox in one transaction")
+Rel(router, db, "Stores channel task in outbox with state transition")
+Rel(kafka, pushw, "Push task")
+Rel(kafka, smsw, "SMS task")
+Rel(kafka, emailw, "Email task")
+Rel(pushw, fcm, "Push request")
+Rel(smsw, sms, "SMS request")
+Rel(emailw, email, "Email request")
+Rel(fcm, user, "Push")
+Rel(sms, user, "SMS")
+Rel(email, user, "Email")
+Rel(user, callback, "App ACK")
+Rel(sms, callback, "DLR")
+Rel(callback, kafka, "Callback event")
+Rel(kafka, router, "Apply callback to FSM")
+Rel(pushw, db, "Attempt result")
+Rel(smsw, db, "Attempt result")
+Rel(emailw, db, "Attempt result")
+
+SHOW_LEGEND()
+@enduml

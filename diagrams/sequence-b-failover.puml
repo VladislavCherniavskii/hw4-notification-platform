@@ -1,0 +1,52 @@
+@startuml Sequence_B_Failover
+hide footbox
+autonumber
+actor User
+participant "Bank Core" as Core
+participant "Notification API" as API
+database "PostgreSQL FSM" as DB
+participant "Outbox Relay" as Relay
+queue "Kafka" as Kafka
+participant "Router" as Router
+participant "Scheduler" as Scheduler
+participant "Push Worker" as Push
+participant "FCM / APNs" as FCM
+participant "SMS Worker" as SMS
+participant "SMS Provider" as SMSP
+participant "Callback API" as Callback
+
+Core -> API: POST critical event
+API -> DB: Persist notification + outbox
+DB --> API: COMMIT
+API --> Core: 202 Accepted
+Relay -> Kafka: Publish P0 event
+Kafka -> Router: Consume
+Router -> DB: Set PUSH_PENDING
+Router -> Kafka: Publish push task (outbox)
+Kafka -> Push: Consume
+Push -> FCM: Submit push
+FCM --> Push: Accepted (not device confirmation)
+Push -> DB: Persist provider acceptance
+Router -> DB: Set WAITING_FOR_APP_ACK; next_action_at = now + 8s
+... due time reached; still no App ACK ...
+Scheduler -> DB: SELECT due rows FOR UPDATE SKIP LOCKED
+DB --> Scheduler: notification_id + version
+Scheduler -> DB: CAS WAITING_FOR_APP_ACK -> SMS_RESERVED
+Scheduler -> DB: BEGIN; insert SMS task + outbox; COMMIT
+Relay -> DB: Poll committed outbox row
+Relay -> Kafka: Publish SMS task
+Kafka -> SMS: Consume SMS task
+SMS -> SMSP: Submit SMS
+SMSP --> SMS: Accepted / provider reference
+SMS -> DB: Save SMS attempt
+SMSP -> Callback: DLR (when available)
+Callback -> Kafka: Callback event
+Kafka -> Router: Consume DLR
+Router -> DB: Apply monotonic state transition
+note over Router,DB
+CAS/version prevents concurrent schedulers from
+creating multiple SMS tasks for the same transition.
+A provider timeout after acceptance remains UNKNOWN;
+reconcile before another SMS submission.
+end note
+@enduml

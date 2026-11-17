@@ -1,0 +1,46 @@
+@startuml Sequence_A_Failover
+hide footbox
+autonumber
+actor User
+participant "Bank Core" as Core
+participant "Notification API" as API
+database "PostgreSQL" as DB
+participant "Outbox Relay" as Relay
+queue "Kafka" as Kafka
+participant "Temporal Starter" as Starter
+participant "Temporal Workflow" as WF
+participant "Push Activity" as Push
+participant "FCM / APNs" as FCM
+participant "Mobile App" as App
+participant "Callback API" as Callback
+participant "SMS Activity" as SMS
+participant "SMS Provider" as SMSP
+
+Core -> API: POST critical event + idempotency_key
+API -> DB: Persist notification + inbox + outbox
+DB --> API: COMMIT
+API --> Core: 202 Accepted + notification_id
+Relay -> Kafka: Publish transactional event
+Kafka -> Starter: Consume
+Starter -> WF: Start Workflow(notification_id)
+WF -> Push: Send push
+Push -> FCM: Submit push
+FCM --> Push: Accepted (not device delivery)
+Push -> DB: Store provider acceptance
+WF -> WF: Wait for App ACK or durable 8s timer
+... 8 seconds; no App ACK ...
+WF -> DB: Reserve SMS attempt (idempotent state transition)
+WF -> SMS: Send SMS(attempt_id, idempotency_key)
+SMS -> SMSP: Submit SMS
+SMSP --> SMS: Accepted + provider_message_id
+SMS -> DB: Store SMS provider acceptance
+SMSP -> User: Deliver SMS (carrier dependent)
+SMSP -> Callback: Delivery receipt (if supported)
+Callback -> WF: Signal SMS delivery status
+WF -> DB: Append transition; mark delivered/unconfirmed
+note over WF,App
+If a late Push/App ACK arrives after SMS dispatch,
+the platform records duplicate_risk. It cannot retract
+an SMS already accepted by the provider.
+end note
+@enduml

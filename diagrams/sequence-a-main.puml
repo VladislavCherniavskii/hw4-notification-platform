@@ -1,0 +1,36 @@
+@startuml Sequence_A_Main
+hide footbox
+autonumber
+actor User
+participant "Bank Core" as Core
+participant "Notification API" as API
+database "PostgreSQL" as DB
+participant "Outbox Relay" as Relay
+queue "Kafka" as Kafka
+participant "Temporal Starter" as Starter
+participant "Temporal Workflow" as WF
+participant "Push Activity" as Push
+participant "FCM / APNs" as Provider
+participant "Mobile App" as App
+participant "Callback API" as Callback
+
+Core -> API: POST critical event + idempotency_key
+API -> DB: BEGIN; INSERT notification/inbox/outbox
+DB --> API: COMMIT
+API --> Core: 202 Accepted + notification_id
+Relay -> DB: Read unpublished outbox
+Relay -> Kafka: Publish transactional event
+Kafka --> Starter: Consume event
+Starter -> WF: Start Workflow(notification_id)
+WF -> DB: Load notification and preferences snapshot
+WF -> Push: Send push(attempt_id, notification_id)
+Push -> Provider: Submit push
+Provider --> Push: Accepted + provider_message_id
+Push -> DB: Persist ACCEPTED_BY_PROVIDER
+WF -> WF: Start durable timer (8 seconds)
+Provider -> App: Deliver push (best effort)
+App -> Callback: App ACK(notification_id, device_id)
+Callback -> WF: Signal AppAcknowledged
+WF -> DB: Set DEVICE_ACKNOWLEDGED; append event
+WF --> Core: Workflow completed (delivery confirmed at app)
+@enduml

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2018" height="1597" viewBox="0 0 2018 1597" role="img" aria-label="Вариант B — failover с Push на SMS">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#456b98"/></marker>
+  <marker id="arrowAccent" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#bd7b25"/></marker>
+  <style>
+    text { font-family: 'DejaVu Sans', Arial, sans-serif; }
+    .title { font-size: 27px; font-weight: 700; fill: #172b4d; }
+    .subtitle { font-size: 14px; fill: #53657d; }
+    .actor { fill: #eaf1fb; stroke: #7e9dc4; stroke-width: 1.4; }
+    .actor-text { font-size: 12px; font-weight: 600; fill: #1f3b60; text-anchor: middle; }
+    .life { stroke: #b1bdcb; stroke-width: 1.2; stroke-dasharray: 5 6; }
+    .msg { stroke: #456b98; stroke-width: 1.7; fill: none; marker-end: url(#arrow); }
+    .msg-accent { stroke: #bd7b25; stroke-width: 1.9; fill: none; marker-end: url(#arrowAccent); }
+    .msg-dash { stroke-dasharray: 7 5; }
+    .msg-text { font-size: 12px; fill: #24364b; text-anchor: middle; }
+    .note { fill: #fff7e8; stroke: #e2bc78; stroke-width: 1.2; }
+    .note-text { font-size: 12px; fill: #62491f; }
+    .footer { font-size: 11px; fill: #6b7788; }
+  </style>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#f7f9fc"/>
+<text class="title" x="48" y="46">Вариант B — failover с Push на SMS</text>
+<text class="subtitle" x="48" y="73">Scheduler выбирает просроченную задачу и атомарно резервирует SMS через переход состояния и outbox.</text>
+
+<rect class="actor" x="22" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="90" y="110">Bank Core</text>
+<line class="life" x1="90" y1="154" x2="90" y2="1559"/>
+<rect class="actor" x="180" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="248" y="110">Notification API</text>
+<line class="life" x1="248" y1="154" x2="248" y2="1559"/>
+<rect class="actor" x="338" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="406" y="110">PostgreSQL FSM</text>
+<line class="life" x1="406" y1="154" x2="406" y2="1559"/>
+<rect class="actor" x="496" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="564" y="110">Outbox Relay</text>
+<line class="life" x1="564" y1="154" x2="564" y2="1559"/>
+<rect class="actor" x="654" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="722" y="110">Kafka</text>
+<line class="life" x1="722" y1="154" x2="722" y2="1559"/>
+<rect class="actor" x="812" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="880" y="110">Router</text>
+<line class="life" x1="880" y1="154" x2="880" y2="1559"/>
+<rect class="actor" x="970" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1038" y="110">Scheduler</text>
+<line class="life" x1="1038" y1="154" x2="1038" y2="1559"/>
+<rect class="actor" x="1128" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1196" y="110">Push Worker</text>
+<line class="life" x1="1196" y1="154" x2="1196" y2="1559"/>
+<rect class="actor" x="1286" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1354" y="110">FCM / APNs</text>
+<line class="life" x1="1354" y1="154" x2="1354" y2="1559"/>
+<rect class="actor" x="1444" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1512" y="110">SMS Worker</text>
+<line class="life" x1="1512" y1="154" x2="1512" y2="1559"/>
+<rect class="actor" x="1602" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1670" y="110">SMS Provider</text>
+<line class="life" x1="1670" y1="154" x2="1670" y2="1559"/>
+<rect class="actor" x="1760" y="84.5" width="136" height="43" rx="9"/>
+<text class="actor-text" x="1828" y="110">Callback API</text>
+<line class="life" x1="1828" y1="154" x2="1828" y2="1559"/>
+<line class="msg" x1="90" y1="229.0" x2="248" y2="229.0"/>
+<text class="msg-text" x="169.0" y="212" text-anchor="middle">POST critical event</text>
+<line class="msg" x1="248" y1="285.0" x2="406" y2="285.0"/>
+<text class="msg-text" x="327.0" y="268" text-anchor="middle">Сохранить notification + outbox</text>
+<line class="msg" x1="248" y1="341.0" x2="90" y2="341.0"/>
+<text class="msg-text" x="169.0" y="324" text-anchor="middle">202 Accepted</text>
+<line class="msg msg-dash" x1="564" y1="397.0" x2="722" y2="397.0"/>
+<text class="msg-text" x="643.0" y="380" text-anchor="middle">Опубликовать P0 event</text>
+<line class="msg msg-dash" x1="722" y1="453.0" x2="880" y2="453.0"/>
+<text class="msg-text" x="801.0" y="436" text-anchor="middle">Consume P0 event</text>
+<line class="msg" x1="880" y1="514.0" x2="406" y2="514.0"/>
+<text class="msg-text" x="643.0" y="492" text-anchor="middle">CAS NEW → PUSH_PENDING; push task</text>
+<text class="msg-text" x="643.0" y="508" text-anchor="middle">+ outbox</text>
+<line class="msg msg-dash" x1="564" y1="575.0" x2="722" y2="575.0"/>
+<text class="msg-text" x="643.0" y="558" text-anchor="middle">Опубликовать push task</text>
+<line class="msg msg-dash" x1="722" y1="631.0" x2="1196" y2="631.0"/>
+<text class="msg-text" x="959.0" y="614" text-anchor="middle">Push task</text>
+<line class="msg" x1="1196" y1="687.0" x2="1354" y2="687.0"/>
+<text class="msg-text" x="1275.0" y="670" text-anchor="middle">Submit push</text>
+<line class="msg msg-dash" x1="1354" y1="748.0" x2="1196" y2="748.0"/>
+<text class="msg-text" x="1275.0" y="726" text-anchor="middle">Accepted — не подтверждение</text>
+<text class="msg-text" x="1275.0" y="742" text-anchor="middle">устройства</text>
+<line class="msg" x1="1196" y1="809.0" x2="406" y2="809.0"/>
+<text class="msg-text" x="801.0" y="792" text-anchor="middle">Записать attempt result</text>
+<line class="msg" x1="1038" y1="865.0" x2="406" y2="865.0"/>
+<text class="msg-text" x="722.0" y="848" text-anchor="middle">Найти due rows (SKIP LOCKED)</text>
+<rect class="note" x="344" y="896.5" width="1230" height="57" rx="8"/>
+<text class="note-text" x="358" y="918.5">Истёк таймер 8 секунд, App ACK нет. Scheduler атомарно выполняет CAS WAITING_FOR_APP_ACK →</text>
+<text class="note-text" x="358" y="936.5">SMS_RESERVED и добавляет SMS task в outbox.</text>
+<line class="msg-accent" x1="1038" y1="997.0" x2="406" y2="997.0"/>
+<text class="msg-text" x="722.0" y="980" text-anchor="middle">CAS + insert SMS task + outbox</text>
+<line class="msg-accent msg-dash" x1="564" y1="1053.0" x2="722" y2="1053.0"/>
+<text class="msg-text" x="643.0" y="1036" text-anchor="middle">Опубликовать SMS task</text>
+<line class="msg-accent msg-dash" x1="722" y1="1109.0" x2="1512" y2="1109.0"/>
+<text class="msg-text" x="1117.0" y="1092" text-anchor="middle">SMS task</text>
+<line class="msg-accent" x1="1512" y1="1165.0" x2="1670" y2="1165.0"/>
+<text class="msg-text" x="1591.0" y="1148" text-anchor="middle">Submit SMS(attempt_id)</text>
+<line class="msg-accent msg-dash" x1="1670" y1="1221.0" x2="1512" y2="1221.0"/>
+<text class="msg-text" x="1591.0" y="1204" text-anchor="middle">Accepted / provider reference</text>
+<line class="msg" x1="1512" y1="1277.0" x2="406" y2="1277.0"/>
+<text class="msg-text" x="959.0" y="1260" text-anchor="middle">Сохранить SMS attempt</text>
+<line class="msg msg-dash" x1="1670" y1="1333.0" x2="1828" y2="1333.0"/>
+<text class="msg-text" x="1749.0" y="1316" text-anchor="middle">DLR callback, если есть</text>
+<line class="msg msg-dash" x1="1828" y1="1389.0" x2="722" y2="1389.0"/>
+<text class="msg-text" x="1275.0" y="1372" text-anchor="middle">Callback event</text>
+<line class="msg msg-dash" x1="722" y1="1445.0" x2="880" y2="1445.0"/>
+<text class="msg-text" x="801.0" y="1428" text-anchor="middle">Применить DLR</text>
+<line class="msg" x1="880" y1="1501.0" x2="406" y2="1501.0"/>
+<text class="msg-text" x="643.0" y="1484" text-anchor="middle">Монотонный переход состояния</text>
+<text class="footer" x="48" y="1584">Пунктирная линия — асинхронное сообщение или callback. Подтверждение провайдера не равно подтверждению на устройстве.</text>
+</svg>

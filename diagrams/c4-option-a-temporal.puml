@@ -1,0 +1,56 @@
+@startuml C4_Container_Option_A_Temporal
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_WITH_LEGEND()
+title C4 Container — Вариант A: Kafka + Temporal для критичных уведомлений
+
+Person(user, "Пользователь", "Получает push/SMS/email и использует мобильный банк")
+System_Ext(core, "Bank Core / Domain Services", "Генерируют событие перевода, списания или заявки")
+System_Ext(fcm, "FCM / APNs", "Push provider")
+System_Ext(sms, "SMS Providers", "Основной и резервный шлюзы")
+System_Ext(email, "Email Provider", "Почтовый шлюз")
+
+System_Boundary(np, "Notification Platform") {
+  Container(api, "Notification API", "Go, REST/gRPC", "Валидация producer, idempotency, приём события")
+  Container(callback, "Callback API", "Go, HTTPS", "App ACK и provider DLR; подпись и дедупликация callback")
+  ContainerDb(appdb, "Notification DB", "PostgreSQL HA", "Notifications, attempts, inbox, outbox, audit events")
+  Container(relay, "Outbox Relay", "Go", "Публикация outbox в Kafka")
+  ContainerQueue(kafka, "Kafka", "Event Bus", "Отдельные topics: transactional, service, marketing, callbacks")
+  Container(starter, "Transactional Starter", "Go", "Запуск Workflow с детерминированным Workflow ID")
+  Container(temporal, "Temporal Cluster", "Workflow Engine", "Durable history, timers, signals, retries")
+  Container(worker, "Critical Workflow Workers", "Go", "Push-first, ожидание App ACK, SMS/Email failover")
+  Container(adapter, "Provider Adapters", "Go", "Timeouts, circuit breaker, idempotency, reconciliation")
+  Container(prefs, "Preference Service", "Go", "Verified contacts, device tokens, channel order, consent")
+  ContainerDb(prefdb, "Preference DB", "PostgreSQL", "Версионированные настройки пользователя")
+  Container(campaign, "Campaign Dispatcher", "Go", "Bulk service/marketing; отдельные quotas и worker pools")
+  ContainerDb(tdb, "Temporal Persistence", "Отдельный PostgreSQL", "Workflow history и служебное состояние Temporal")
+}
+
+Rel(core, api, "Создаёт уведомление", "HTTPS/gRPC")
+Rel(api, appdb, "В одной транзакции: notification + inbox + outbox")
+Rel(relay, appdb, "Читает/помечает outbox")
+Rel(relay, kafka, "Публикует события")
+Rel(kafka, starter, "transactional topic")
+Rel(starter, temporal, "Start Workflow(notification_id)")
+Rel(temporal, tdb, "Persist history / timers")
+Rel(worker, temporal, "Poll Workflow/Activity tasks")
+Rel(worker, prefs, "Получает политику и каналы")
+Rel(prefs, prefdb, "Читает настройки")
+Rel(worker, adapter, "Вызывает channel activities")
+Rel(adapter, fcm, "Push")
+Rel(adapter, sms, "SMS")
+Rel(adapter, email, "Email")
+Rel(fcm, user, "Push")
+Rel(sms, user, "SMS")
+Rel(email, user, "Email")
+Rel(user, callback, "App ACK", "HTTPS")
+Rel(fcm, callback, "Provider feedback, если доступен", "HTTPS")
+Rel(sms, callback, "DLR callback", "HTTPS")
+Rel(callback, appdb, "Deduplicate and persist callback")
+Rel(callback, temporal, "Signal Workflow(notification_id)", "Temporal Client")
+Rel(worker, appdb, "Фиксирует attempts и state transitions")
+Rel(kafka, campaign, "service / marketing topics")
+Rel(campaign, adapter, "Bulk sends с отдельными quotas")
+Rel(api, prefs, "Проверка producer/user policy")
+
+SHOW_LEGEND()
+@enduml

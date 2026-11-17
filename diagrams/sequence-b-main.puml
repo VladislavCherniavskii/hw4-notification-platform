@@ -1,0 +1,35 @@
+@startuml Sequence_B_Main
+hide footbox
+autonumber
+actor User
+participant "Bank Core" as Core
+participant "Notification API" as API
+database "PostgreSQL FSM" as DB
+participant "Outbox Relay" as Relay
+queue "Kafka" as Kafka
+participant "Router" as Router
+participant "Push Worker" as Push
+participant "FCM / APNs" as FCM
+participant "Mobile App" as App
+participant "Callback API" as Callback
+
+Core -> API: POST event + idempotency_key
+API -> DB: BEGIN; INSERT notification + outbox
+DB --> API: COMMIT
+API --> Core: 202 Accepted + notification_id
+Relay -> Kafka: Publish P0 event
+Kafka -> Router: Consume
+Router -> DB: BEGIN; CAS NEW -> PUSH_PENDING; insert push task + outbox; COMMIT
+Relay -> DB: Poll committed outbox row
+Relay -> Kafka: Publish push task
+Kafka -> Push: Consume push task
+Push -> FCM: Submit push
+FCM --> Push: Accepted + provider_message_id
+Push -> DB: Persist attempt result
+Router -> DB: Set WAITING_FOR_APP_ACK; next_action_at = now + 8s
+FCM -> App: Deliver (best effort)
+App -> Callback: App ACK(notification_id)
+Callback -> Kafka: Callback event
+Kafka -> Router: Consume callback
+Router -> DB: CAS WAITING_FOR_APP_ACK -> DELIVERED
+@enduml
